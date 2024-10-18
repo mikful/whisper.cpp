@@ -219,6 +219,10 @@ int main(int argc, char ** argv) {
 
         wavWriter.open(filename, WHISPER_SAMPLE_RATE, 16, 1);
     }
+
+    // Redirect stderr to /dev/null
+    freopen("/dev/null", "w", stderr);
+
     printf("[Start speaking]\n");
     fflush(stdout);
 
@@ -327,62 +331,74 @@ int main(int argc, char ** argv) {
             }
 
             // print result;
+            // {
+            //     if (!use_vad) {
+            //         printf("\33[2K\r");
+
+            //         // print long empty line to clear the previous line
+            //         printf("%s", std::string(100, ' ').c_str());
+
+            //         printf("\33[2K\r");
+            //     } else {
+            //         const int64_t t1 = (t_last - t_start).count()/1000000;
+            //         const int64_t t0 = std::max(0.0, t1 - pcmf32.size()*1000.0/WHISPER_SAMPLE_RATE);
+
+            //         printf("\n");
+            //         printf("### Transcription %d START | t0 = %d ms | t1 = %d ms\n", n_iter, (int) t0, (int) t1);
+            //         printf("\n");
+            //     }
+
+            //     const int n_segments = whisper_full_n_segments(ctx);
+            //     for (int i = 0; i < n_segments; ++i) {
+            //         const char * text = whisper_full_get_segment_text(ctx, i);
+
+            //         if (params.no_timestamps) {
+            //             printf("%s", text);
+            //             fflush(stdout);
+
+            //             if (params.fname_out.length() > 0) {
+            //                 fout << text;
+            //             }
+            //         } else {
+            //             const int64_t t0 = whisper_full_get_segment_t0(ctx, i);
+            //             const int64_t t1 = whisper_full_get_segment_t1(ctx, i);
+
+            //             std::string output = "[" + to_timestamp(t0, false) + " --> " + to_timestamp(t1, false) + "]  " + text;
+
+            //             if (whisper_full_get_segment_speaker_turn_next(ctx, i)) {
+            //                 output += " [SPEAKER_TURN]";
+            //             }
+
+            //             output += "\n";
+
+            //             printf("%s", output.c_str());
+            //             fflush(stdout);
+
+            //             if (params.fname_out.length() > 0) {
+            //                 fout << output;
+            //             }
+            //         }
+            //     }
+
+            //     if (params.fname_out.length() > 0) {
+            //         fout << std::endl;
+            //     }
+
+            //     if (use_vad) {
+            //         printf("\n");
+            //         printf("### Transcription %d END\n", n_iter);
+            //     }
+            // }
             {
-                if (!use_vad) {
-                    printf("\33[2K\r");
-
-                    // print long empty line to clear the previous line
-                    printf("%s", std::string(100, ' ').c_str());
-
-                    printf("\33[2K\r");
-                } else {
-                    const int64_t t1 = (t_last - t_start).count()/1000000;
-                    const int64_t t0 = std::max(0.0, t1 - pcmf32.size()*1000.0/WHISPER_SAMPLE_RATE);
-
-                    printf("\n");
-                    printf("### Transcription %d START | t0 = %d ms | t1 = %d ms\n", n_iter, (int) t0, (int) t1);
-                    printf("\n");
-                }
-
                 const int n_segments = whisper_full_n_segments(ctx);
-                for (int i = 0; i < n_segments; ++i) {
-                    const char * text = whisper_full_get_segment_text(ctx, i);
-
-                    if (params.no_timestamps) {
-                        printf("%s", text);
+                if (n_segments > 0) {
+                    // Only print the last segment
+                    const char * text = whisper_full_get_segment_text(ctx, n_segments - 1);
+                    
+                    if (strlen(text) > 0) {
+                        printf("%s\n", text);
                         fflush(stdout);
-
-                        if (params.fname_out.length() > 0) {
-                            fout << text;
-                        }
-                    } else {
-                        const int64_t t0 = whisper_full_get_segment_t0(ctx, i);
-                        const int64_t t1 = whisper_full_get_segment_t1(ctx, i);
-
-                        std::string output = "[" + to_timestamp(t0, false) + " --> " + to_timestamp(t1, false) + "]  " + text;
-
-                        if (whisper_full_get_segment_speaker_turn_next(ctx, i)) {
-                            output += " [SPEAKER_TURN]";
-                        }
-
-                        output += "\n";
-
-                        printf("%s", output.c_str());
-                        fflush(stdout);
-
-                        if (params.fname_out.length() > 0) {
-                            fout << output;
-                        }
                     }
-                }
-
-                if (params.fname_out.length() > 0) {
-                    fout << std::endl;
-                }
-
-                if (use_vad) {
-                    printf("\n");
-                    printf("### Transcription %d END\n", n_iter);
                 }
             }
 
